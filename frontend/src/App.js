@@ -22,7 +22,7 @@ function App() {
         <Routes>
            <Route path="/policies" element={<div className="p-8">Complaints Page - Coming Soon</div>} />
         {/* Authentication Routes */}
-        <Route path="/" element={<ClientDashboard />} />
+        <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<ClientRegister />} />
         {/*Client Dashboard Routes */}
         <Route path="/dashboard" element={<ClientDashboard />} />
@@ -31,7 +31,8 @@ function App() {
           <Route path="/feedback" element={<ClientFeedback />} />
           <Route path="/claims" element={<ClaimsSubmission />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="/login" element={<LoginPage />} />
+          {/* End Client Routes */}
+         
           {/* Admin Routes */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/clients" element={<AdminClients />} />  
@@ -40,9 +41,7 @@ function App() {
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/complaints" element={<AdminComplaints />} />
         {/* Placeholder routes - create these components next */}
-        <Route path="*" element={<div className="p-8">Complaints Page - Coming Soon</div>} />
-      
-        
+          <Route path="*" element={<div className="p-8 text-gray-500  text-lg"> Page Under- Construction ,It Will Be Available Soon!</div>} />
         {/* Redirect unknown routes to login */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
