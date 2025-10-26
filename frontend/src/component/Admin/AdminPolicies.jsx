@@ -28,8 +28,13 @@ import {
   User,
   Mail,
   Phone,
-  MapPin,
-  FileCheck
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  RefreshCw,
+  MoreVertical,
+  ExpandIcon
+
 } from 'lucide-react';
 
 export default function AdminPolicies() {
@@ -40,8 +45,9 @@ export default function AdminPolicies() {
   const [filterType, setFilterType] = useState('all');
   const [selectedPolicy, setSelectedPolicy] = useState(null);
   const [showAddPolicy, setShowAddPolicy] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
 
-  // Sample policies data
+  // Sample policies data with more details
   const [policies, setPolicies] = useState([
     {
       id: 'E390073',
@@ -49,14 +55,19 @@ export default function AdminPolicies() {
       type: 'Life Insurance',
       holder: 'Gustave Karekezi',
       holderID: 'CLI-12345',
-      premium: '50,000 RWF',
-      coverage: '10,000,000 RWF',
+      holderEmail: 'gustave.k@example.com',
+      holderPhone: '0786979551',
+      premium: '50,000',
+      coverage: '10,000,000',
       status: 'Active',
       startDate: '2023-06-21',
       endDate: '2026-06-21',
       nextPayment: '2025-11-15',
       paymentFrequency: 'Monthly',
-      beneficiary: 'Marie Karekezi'
+      beneficiary: 'Marie Karekezi',
+      claimsCount: 2,
+      totalPaid: '850,000',
+      daysUntilRenewal: 225
     },
     {
       id: 'S390074',
@@ -64,14 +75,19 @@ export default function AdminPolicies() {
       type: 'Health Insurance',
       holder: 'Jean Marie Uwimana',
       holderID: 'CLI-12346',
-      premium: '35,000 RWF',
-      coverage: '5,000,000 RWF',
+      holderEmail: 'jean.uwimana@example.com',
+      holderPhone: '0788123456',
+      premium: '35,000',
+      coverage: '5,000,000',
       status: 'Lapsed',
       startDate: '2023-08-15',
       endDate: '2026-08-15',
       nextPayment: '2025-11-20',
       paymentFrequency: 'Monthly',
-      beneficiary: 'Self'
+      beneficiary: 'Self',
+      claimsCount: 1,
+      totalPaid: '455,000',
+      daysUntilRenewal: 230
     },
     {
       id: 'P390075',
@@ -79,14 +95,19 @@ export default function AdminPolicies() {
       type: 'Motor Insurance',
       holder: 'Alice Mukamana',
       holderID: 'CLI-12347',
-      premium: '120,000 RWF',
-      coverage: '15,000,000 RWF',
+      holderEmail: 'alice.m@example.com',
+      holderPhone: '0789654321',
+      premium: '120,000',
+      coverage: '15,000,000',
       status: 'Active',
       startDate: '2024-01-10',
       endDate: '2025-01-10',
       nextPayment: '2025-01-10',
       paymentFrequency: 'Annually',
-      beneficiary: 'N/A'
+      beneficiary: 'N/A',
+      claimsCount: 0,
+      totalPaid: '120,000',
+      daysUntilRenewal: 76
     },
     {
       id: 'H390076',
@@ -94,14 +115,19 @@ export default function AdminPolicies() {
       type: 'Property Insurance',
       holder: 'Patrick Nkurunziza',
       holderID: 'CLI-12348',
-      premium: '80,000 RWF',
-      coverage: '20,000,000 RWF',
+      holderEmail: 'patrick.n@example.com',
+      holderPhone: '0787456789',
+      premium: '80,000',
+      coverage: '20,000,000',
       status: 'Active',
       startDate: '2022-11-05',
       endDate: '2025-11-05',
       nextPayment: '2025-11-05',
       paymentFrequency: 'Annually',
-      beneficiary: 'N/A'
+      beneficiary: 'N/A',
+      claimsCount: 3,
+      totalPaid: '240,000',
+      daysUntilRenewal: 10
     },
     {
       id: 'T390077',
@@ -109,14 +135,19 @@ export default function AdminPolicies() {
       type: 'Travel Insurance',
       holder: 'Sarah Umutoni',
       holderID: 'CLI-12349',
-      premium: '15,000 RWF',
-      coverage: '2,000,000 RWF',
+      holderEmail: 'sarah.u@example.com',
+      holderPhone: '0785987654',
+      premium: '15,000',
+      coverage: '2,000,000',
       status: 'Pending',
       startDate: '2025-11-01',
       endDate: '2025-12-01',
       nextPayment: '2025-11-01',
       paymentFrequency: 'One-time',
-      beneficiary: 'Self'
+      beneficiary: 'Self',
+      claimsCount: 0,
+      totalPaid: '0',
+      daysUntilRenewal: 6
     },
     {
       id: 'L390078',
@@ -124,14 +155,19 @@ export default function AdminPolicies() {
       type: 'Life Insurance',
       holder: 'Patrick Nkurunziza',
       holderID: 'CLI-12348',
-      premium: '75,000 RWF',
-      coverage: '25,000,000 RWF',
+      holderEmail: 'patrick.n@example.com',
+      holderPhone: '0787456789',
+      premium: '75,000',
+      coverage: '25,000,000',
       status: 'Active',
       startDate: '2023-03-15',
       endDate: '2028-03-15',
       nextPayment: '2025-11-15',
       paymentFrequency: 'Monthly',
-      beneficiary: 'Grace Nkurunziza'
+      beneficiary: 'Grace Nkurunziza',
+      claimsCount: 1,
+      totalPaid: '1,950,000',
+      daysUntilRenewal: 871
     },
     {
       id: 'M390079',
@@ -139,14 +175,19 @@ export default function AdminPolicies() {
       type: 'Health Insurance',
       holder: 'Jean Marie Uwimana',
       holderID: 'CLI-12346',
-      premium: '50,000 RWF',
-      coverage: '8,000,000 RWF',
+      holderEmail: 'jean.uwimana@example.com',
+      holderPhone: '0788123456',
+      premium: '50,000',
+      coverage: '8,000,000',
       status: 'Expired',
       startDate: '2023-04-20',
       endDate: '2024-04-20',
       nextPayment: '-',
       paymentFrequency: 'Monthly',
-      beneficiary: 'Self'
+      beneficiary: 'Self',
+      claimsCount: 2,
+      totalPaid: '600,000',
+      daysUntilRenewal: -188
     }
   ]);
 
@@ -214,20 +255,55 @@ export default function AdminPolicies() {
     return colors[type] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredPolicies = policies.filter(policy => {
-    const matchesSearch = 
-      policy.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      policy.policyNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      policy.holder.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || policy.status.toLowerCase() === filterStatus.toLowerCase();
-    const matchesType = filterType === 'all' || policy.type === filterType;
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedAndFilteredPolicies = () => {
+    let filtered = policies.filter(policy => {
+      const matchesSearch = 
+        policy.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        policy.policyNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        policy.holder.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesStatus = filterStatus === 'all' || policy.status.toLowerCase() === filterStatus.toLowerCase();
+      const matchesType = filterType === 'all' || policy.type === filterType;
+      return matchesSearch && matchesStatus && matchesType;
+    });
+
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        let aVal = a[sortConfig.key];
+        let bVal = b[sortConfig.key];
+        
+        if (sortConfig.key === 'premium' || sortConfig.key === 'coverage') {
+          aVal = parseInt(aVal.replace(/,/g, ''));
+          bVal = parseInt(bVal.replace(/,/g, ''));
+        }
+        
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  };
+
+  const filteredPolicies = sortedAndFilteredPolicies();
 
   const totalPolicies = policies.length;
   const activePolicies = policies.filter(p => p.status === 'Active').length;
   const pendingPolicies = policies.filter(p => p.status === 'Pending').length;
   const expiredPolicies = policies.filter(p => p.status === 'Expired' || p.status === 'Lapsed').length;
+  const expiringSoon = policies.filter(p => p.daysUntilRenewal > 0 && p.daysUntilRenewal <= 30).length;
+
+  // Calculate financial metrics
+  const totalPremiumValue = policies.reduce((sum, p) => sum + parseInt(p.premium.replace(/,/g, '')), 0);
+  const totalCoverageValue = policies.reduce((sum, p) => sum + parseInt(p.coverage.replace(/,/g, '')), 0);
 
   const handleDeletePolicy = (policyId) => {
     if (window.confirm('Are you sure you want to delete this policy?')) {
@@ -238,6 +314,21 @@ export default function AdminPolicies() {
 
   const handleViewPolicy = (policy) => {
     setSelectedPolicy(policy);
+  };
+
+  const handleRenewPolicy = (policyId) => {
+    const updatedPolicies = policies.map(p => {
+      if (p.id === policyId) {
+        return {
+          ...p,
+          status: 'Active',
+          daysUntilRenewal: 365
+        };
+      }
+      return p;
+    });
+    setPolicies(updatedPolicies);
+    alert('Policy renewed successfully!');
   };
 
   return (
@@ -313,7 +404,11 @@ export default function AdminPolicies() {
             <div className="flex items-center space-x-4">
               <button className="relative p-2 text-gray-600 hover:text-gray-900">
                 <Bell size={24} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                {expiringSoon > 0 && (
+                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                    {expiringSoon}
+                  </span>
+                )}
               </button>
               <button
                 onClick={() => setShowAddPolicy(true)}
@@ -326,55 +421,67 @@ export default function AdminPolicies() {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <div className="p-8 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Policies</p>
-                  <p className="text-3xl font-bold text-gray-900">{totalPolicies}</p>
-                </div>
+              <div className="flex items-center justify-between mb-3">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Shield className="text-blue-600" size={24} />
                 </div>
+                <TrendingUp className="text-green-600" size={20} />
               </div>
+              <p className="text-sm text-gray-600 mb-1">Total Policies</p>
+              <p className="text-3xl font-bold text-gray-900">{totalPolicies}</p>
+              <p className="text-xs text-gray-500 mt-1">+12% from last month</p>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Active</p>
-                  <p className="text-3xl font-bold text-green-600">{activePolicies}</p>
-                </div>
+              <div className="flex items-center justify-between mb-3">
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   <CheckCircle className="text-green-600" size={24} />
                 </div>
+                <Activity className="text-green-600" size={20} />
               </div>
+              <p className="text-sm text-gray-600 mb-1">Active Policies</p>
+              <p className="text-3xl font-bold text-green-600">{activePolicies}</p>
+              <p className="text-xs text-gray-500 mt-1">{((activePolicies/totalPolicies)*100).toFixed(1)}% of total</p>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Pending</p>
-                  <p className="text-3xl font-bold text-yellow-600">{pendingPolicies}</p>
-                </div>
+              <div className="flex items-center justify-between mb-3">
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <AlertCircle className="text-yellow-600" size={24} />
                 </div>
+                <Clock className="text-yellow-600" size={20} />
               </div>
+              <p className="text-sm text-gray-600 mb-1">Expiring Soon</p>
+              <p className="text-3xl font-bold text-yellow-600">{ExpandIcon}</p>
+              <p className="text-xs text-gray-500 mt-1">Within 30 days</p>
             </div>
 
             <div className="bg-white rounded-lg shadow-md p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Expired/Lapsed</p>
-                  <p className="text-3xl font-bold text-red-600">{expiredPolicies}</p>
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <DollarSign className="text-purple-600" size={24} />
                 </div>
+                <TrendingUp className="text-purple-600" size={20} />
+              </div>
+              <p className="text-sm text-gray-600 mb-1">Total Premium</p>
+              <p className="text-2xl font-bold text-purple-600">{(totalPremiumValue/1000).toFixed(0)}K</p>
+              <p className="text-xs text-gray-500 mt-1">RWF per month</p>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-5">
+              <div className="flex items-center justify-between mb-3">
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                   <XCircle className="text-red-600" size={24} />
                 </div>
+                <TrendingDown className="text-red-600" size={20} />
               </div>
+              <p className="text-sm text-gray-600 mb-1">Expired/Lapsed</p>
+              <p className="text-3xl font-bold text-red-600">{expiredPolicies}</p>
+              <p className="text-xs text-gray-500 mt-1">Needs attention</p>
             </div>
           </div>
         </div>
@@ -419,6 +526,17 @@ export default function AdminPolicies() {
                   <Download size={18} />
                   <span>Export</span>
                 </button>
+                <button 
+                  onClick={() => {
+                    setSearchQuery('');
+                    setFilterStatus('all');
+                    setFilterType('all');
+                  }}
+                  className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  title="Reset Filters"
+                >
+                  <RefreshCw size={18} />
+                </button>
               </div>
             </div>
           </div>
@@ -430,13 +548,28 @@ export default function AdminPolicies() {
             <table className="w-full">
               <thead className="bg-blue-700 text-white">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Policy Info</th>
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-blue-800"
+                    onClick={() => handleSort('id')}
+                  >
+                    Policy Info {sortConfig.key === 'id' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Type</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Holder</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Premium</th>
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-blue-800"
+                    onClick={() => handleSort('holder')}
+                  >
+                    Holder {sortConfig.key === 'holder' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
+                  <th 
+                    className="px-6 py-4 text-left text-sm font-semibold cursor-pointer hover:bg-blue-800"
+                    onClick={() => handleSort('premium')}
+                  >
+                    Premium {sortConfig.key === 'premium' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                  </th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Coverage</th>
                   <th className="px-6 py-4 text-left text-sm font-semibold">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Next Payment</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Renewal</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -462,12 +595,12 @@ export default function AdminPolicies() {
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-semibold text-gray-900">{policy.premium}</p>
+                        <p className="font-semibold text-gray-900">{policy.premium} RWF</p>
                         <p className="text-xs text-gray-500">{policy.paymentFrequency}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className="font-semibold text-gray-900">{policy.coverage}</span>
+                      <span className="font-semibold text-gray-900">{policy.coverage} RWF</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
@@ -478,7 +611,20 @@ export default function AdminPolicies() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-gray-900">{policy.nextPayment}</p>
+                      {policy.daysUntilRenewal > 0 ? (
+                        <div>
+                          <p className={`text-sm font-semibold ${policy.daysUntilRenewal <= 30 ? 'text-red-600' : 'text-gray-900'}`}>
+                            {policy.daysUntilRenewal} days
+                          </p>
+                          {policy.daysUntilRenewal <= 30 && (
+                            <p className="text-xs text-red-600">Expiring soon!</p>
+                          )}
+                        </div>
+                      ) : policy.daysUntilRenewal < 0 ? (
+                        <p className="text-sm text-red-600 font-semibold">Expired</p>
+                      ) : (
+                        <p className="text-sm text-gray-500">-</p>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center space-x-2">
@@ -495,6 +641,15 @@ export default function AdminPolicies() {
                         >
                           <Edit size={18} />
                         </button>
+                        {(policy.status === 'Expired' || policy.status === 'Lapsed') && (
+                          <button
+                            onClick={() => handleRenewPolicy(policy.id)}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            title="Renew Policy"
+                          >
+                            <RefreshCw size={18} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDeletePolicy(policy.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -517,13 +672,20 @@ export default function AdminPolicies() {
               </div>
             )}
           </div>
+
+          {/* Results Summary */}
+          {filteredPolicies.length > 0 && (
+            <div className="mt-4 text-sm text-gray-600 text-center">
+              Showing {filteredPolicies.length} of {totalPolicies} policies
+            </div>
+          )}
         </div>
       </div>
 
       {/* View Policy Modal */}
       {selectedPolicy && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Policy Details</h2>
@@ -556,34 +718,59 @@ export default function AdminPolicies() {
                 </span>
               </div>
 
+              {/* Quick Stats */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="bg-blue-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Total Paid</p>
+                  <p className="text-lg font-bold text-blue-700">{selectedPolicy.totalPaid} RWF</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Claims Filed</p>
+                  <p className="text-lg font-bold text-green-700">{selectedPolicy.claimsCount}</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Premium</p>
+                  <p className="text-lg font-bold text-purple-700">{selectedPolicy.premium} RWF</p>
+                </div>
+                <div className="bg-orange-50 rounded-lg p-4 text-center">
+                  <p className="text-xs text-gray-600 mb-1">Days to Renewal</p>
+                  <p className="text-lg font-bold text-orange-700">
+                    {selectedPolicy.daysUntilRenewal > 0 ? selectedPolicy.daysUntilRenewal : 'Expired'}
+                  </p>
+                </div>
+              </div>
+
               {/* Policy Information Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Policy Details */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">Policy Information</h3>
+                  <h3 className="font-semibold text-gray-900 text-lg border-b pb-2 flex items-center">
+                    <Shield className="mr-2 text-blue-700" size={20} />
+                    Policy Information
+                  </h3>
                   <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500">Policy Number</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Policy Number</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.policyNumber}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Policy Type</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Policy Type</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.type}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Coverage Amount</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedPolicy.coverage}</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Coverage Amount</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedPolicy.coverage} RWF</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Premium Amount</p>
-                      <p className="text-sm font-semibold text-gray-900">{selectedPolicy.premium}</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Premium Amount</p>
+                      <p className="text-sm font-semibold text-gray-900">{selectedPolicy.premium} RWF</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Payment Frequency</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Payment Frequency</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.paymentFrequency}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Beneficiary</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Beneficiary</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.beneficiary}</p>
                     </div>
                   </div>
@@ -591,18 +778,36 @@ export default function AdminPolicies() {
 
                 {/* Policy Holder Details */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-gray-900 text-lg border-b pb-2">Policy Holder</h3>
+                  <h3 className="font-semibold text-gray-900 text-lg border-b pb-2 flex items-center">
+                    <User className="mr-2 text-blue-700" size={20} />
+                    Policy Holder
+                  </h3>
                   <div className="space-y-3">
-                    <div>
-                      <p className="text-xs text-gray-500">Name</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Name</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.holder}</p>
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Client ID</p>
+                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <p className="text-sm text-gray-600">Client ID</p>
                       <p className="text-sm font-semibold text-gray-900">{selectedPolicy.holderID}</p>
                     </div>
-                    <div className="pt-4">
-                      <button className="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold">
+                    <div className="flex items-center p-2 bg-gray-50 rounded">
+                      <Mail className="text-gray-400 mr-2" size={16} />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Email</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedPolicy.holderEmail}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center p-2 bg-gray-50 rounded">
+                      <Phone className="text-gray-400 mr-2" size={16} />
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-500">Phone</p>
+                        <p className="text-sm font-medium text-gray-900">{selectedPolicy.holderPhone}</p>
+                      </div>
+                    </div>
+                    <div className="pt-2">
+                      <button className="w-full px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold flex items-center justify-center">
+                        <User size={18} className="mr-2" />
                         View Client Profile
                       </button>
                     </div>
@@ -612,32 +817,62 @@ export default function AdminPolicies() {
 
               {/* Policy Timeline */}
               <div className="border-t pt-6">
-                <h3 className="font-semibold text-gray-900 text-lg mb-4">Policy Timeline</h3>
+                <h3 className="font-semibold text-gray-900 text-lg mb-4 flex items-center">
+                  <Calendar className="mr-2 text-blue-700" size={20} />
+                  Policy Timeline
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">Start Date</p>
-                    <p className="text-lg font-bold text-blue-700">{selectedPolicy.startDate}</p>
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1 flex items-center">
+                      <Calendar size={14} className="mr-1" />
+                      Start Date
+                    </p>
+                    <p className="text-xl font-bold text-blue-700">{selectedPolicy.startDate}</p>
                   </div>
-                  <div className="bg-green-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">Next Payment</p>
-                    <p className="text-lg font-bold text-green-700">{selectedPolicy.nextPayment}</p>
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                    <p className="text-xs text-gray-600 mb-1 flex items-center">
+                      <DollarSign size={14} className="mr-1" />
+                      Next Payment
+                    </p>
+                    <p className="text-xl font-bold text-green-700">{selectedPolicy.nextPayment}</p>
                   </div>
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <p className="text-xs text-gray-600 mb-1">End Date</p>
-                    <p className="text-lg font-bold text-purple-700">{selectedPolicy.endDate}</p>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                    <p className="text-xs text-gray-600 mb-1 flex items-center">
+                      <Clock size={14} className="mr-1" />
+                      End Date
+                    </p>
+                    <p className="text-xl font-bold text-purple-700">{selectedPolicy.endDate}</p>
                   </div>
                 </div>
               </div>
 
+              {/* Warning Alert for Expiring Soon */}
+              {selectedPolicy.daysUntilRenewal > 0 && selectedPolicy.daysUntilRenewal <= 30 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                  <div className="flex items-start">
+                    <AlertCircle className="text-red-600 mt-0.5 mr-3" size={20} />
+                    <div>
+                      <p className="font-semibold text-red-800">Policy Expiring Soon!</p>
+                      <p className="text-sm text-red-700 mt-1">
+                        This policy will expire in {selectedPolicy.daysUntilRenewal} days. Please contact the client for renewal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex space-x-3 pt-4 border-t">
-                <button className="flex-1 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                <button className="flex-1 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center">
+                  <Edit size={18} className="mr-2" />
                   Edit Policy
                 </button>
-                <button className="flex-1 px-6 py-3 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 transition-colors">
-                  View Claims
+                <button className="flex-1 px-6 py-3 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 transition-colors flex items-center justify-center">
+                  <FileText size={18} className="mr-2" />
+                  View Claims ({selectedPolicy.claimsCount})
                 </button>
-                <button className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                <button className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center">
+                  <Download size={18} className="mr-2" />
                   Generate Report
                 </button>
               </div>

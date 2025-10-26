@@ -13,6 +13,8 @@ import AdminPolicies from './component/Admin/AdminPolicies';
 import AdminClaims from './component/Admin/AdminClaims';
 import AdminPayments from './component/Admin/AdminPayments';
 import AdminComplaints from './component/Admin/AdminComplaints';
+import AdminReports from './component/Admin/AdminReport';
+import AdminSettings from './component/Admin/AdminSettings';
 import Policies from './pages/Policies';
 import "./App.css"
 
@@ -40,6 +42,8 @@ function App() {
           <Route path="/admin/claims" element={<AdminClaims />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
           <Route path="/admin/complaints" element={<AdminComplaints />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
         {/* Placeholder routes - create these components next */}
           <Route path="*" element={<div className="p-8 text-gray-500  text-lg"> Page Under- Construction ,It Will Be Available Soon!</div>} />
         {/* Redirect unknown routes to login */}
