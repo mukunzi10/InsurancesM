@@ -24,10 +24,11 @@ function App() {
         <Routes>
            <Route path="/policies" element={<div className="p-8">Complaints Page - Coming Soon</div>} />
         {/* Authentication Routes */}
-        <Route path="/" element={<LoginPage />} />
+          <Route path="/" element={<LoginPage />} />
+           <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<ClientRegister />} />
         {/*Client Dashboard Routes */}
-        <Route path="/dashboard" element={<ClientDashboard />} />
+        <Route path="/ClientDashboard" element={<ClientDashboard />} />
           <Route path="/services" element={<ClientServices />} />
           <Route path="/complaints" element={<ClientComplaints />} />
           <Route path="/feedback" element={<ClientFeedback />} />

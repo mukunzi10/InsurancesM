@@ -61,5 +61,7 @@ axiosClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+//Client authentication 
+
 
 export default axiosClient;

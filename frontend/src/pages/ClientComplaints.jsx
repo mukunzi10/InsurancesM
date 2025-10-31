@@ -1,31 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  FileText, 
-  Briefcase, 
-  MessageSquare, 
-  ThumbsUp,
-  Bell,
-  Settings,
-  LogOut,
-  Plus,
-  Search,
-  Filter,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Eye,
-  Send,
-  X
+  FileText, Briefcase, MessageSquare, ThumbsUp,
+  Bell, Settings, LogOut, Plus, Search,
+  Clock, CheckCircle, XCircle, AlertCircle, X
 } from 'lucide-react';
+import { fetchMyComplaints, submitComplaint } from '../api/complaints';
+import axios from 'axios';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 export default function ClientComplaints() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [user, setUser] = useState(null);
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [showNewComplaint, setShowNewComplaint] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [error, setError] = useState('');
   const [complaintForm, setComplaintForm] = useState({
     subject: '',
     category: '',
@@ -34,154 +29,152 @@ export default function ClientComplaints() {
     priority: 'medium'
   });
 
-  // Sample complaints data
-  const complaints = [
-    {
-      id: 'CMP-2024-001',
-      subject: 'Claim payment delay',
-      category: 'Claims',
-      policyNumber: 'E390073',
-      status: 'In Progress',
-      priority: 'high',
-      dateSubmitted: '2025-10-20',
-      lastUpdated: '2025-10-23',
-      description: 'My claim payment has been delayed for over 2 weeks. Reference: CLM-2024-156',
-      response: 'We are currently reviewing your case. Expected resolution by Oct 28, 2025.'
-    },
-    {
-      id: 'CMP-2024-002',
-      subject: 'Policy document not received',
-      category: 'Documentation',
-      policyNumber: 'S390074',
-      status: 'Resolved',
-      priority: 'medium',
-      dateSubmitted: '2025-10-15',
-      lastUpdated: '2025-10-18',
-      description: 'I have not received my policy documents after registration.',
-      response: 'Documents have been sent to your registered email address. Please check your spam folder.'
-    },
-    {
-      id: 'CMP-2024-003',
-      subject: 'Premium amount discrepancy',
-      category: 'Billing',
-      policyNumber: 'P390075',
-      status: 'Open',
-      priority: 'medium',
-      dateSubmitted: '2025-10-22',
-      lastUpdated: '2025-10-22',
-      description: 'The premium amount charged is different from what was agreed.',
-      response: null
-    },
-    {
-      id: 'CMP-2024-004',
-      subject: 'Unable to access online portal',
-      category: 'Technical',
-      policyNumber: 'E390073',
-      status: 'Closed',
-      priority: 'low',
-      dateSubmitted: '2025-10-10',
-      lastUpdated: '2025-10-12',
-      description: 'I cannot log in to my account on the website.',
-      response: 'Issue has been resolved. Password reset link was sent to your email.'
-    }
-  ];
-
   const menuItems = [
-    { id: 'policies', label: 'Policies', icon: FileText, path: '/dashboard' },
-    { id: 'services', label: 'Services', icon: Briefcase, path: '/services' },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare, path: '/complaints' },
-    { id: 'feedback', label: 'Feedback', icon: ThumbsUp, path: '/feedback' }
+    { id: 'policies', label: 'Policies', icon: FileText, path: '/clientDashboard' },
+    { id: 'services', label: 'Services', icon: Briefcase, path: '/clientDashboard/services' },
+    { id: 'complaints', label: 'Complaints', icon: MessageSquare, path: '/clientDashboard/complaints' },
+    { id: 'feedback', label: 'Feedback', icon: ThumbsUp, path: '/clientDashboard/feedback' }
   ];
 
+  // ----------------- Fetch User & Complaints -----------------
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+         const token = localStorage.getItem('token');
+        
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+
+        const config = {
+          headers: { Authorization: `Bearer ${token}` }
+        };
+
+        // Fetch user data
+        const userResponse = await axios.get(`${BASE_URL}/auth/me`, config);
+        setUser(userResponse.data);
+          console.log('Fetched user:', userResponse.data);
+        // Fetch complaints
+        const complaintsData = await fetchMyComplaints();
+        setComplaints(complaintsData);
+        console.log('Fetched complaints:', complaintsData);
+        
+      } catch (err) {
+        console.error('Failed to load data:', err);
+        if (err.message?.includes('No auth token') || err.response?.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+        } else {
+          setError('Failed to load data. Please try again.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [navigate]);
+
+  // ----------------- Helpers -----------------
   const getStatusIcon = (status) => {
-    switch(status.toLowerCase()) {
+    switch(status?.toLowerCase()) {
       case 'resolved':
-      case 'closed':
-        return <CheckCircle className="text-green-600" size={20} />;
-      case 'in progress':
-        return <Clock className="text-blue-600" size={20} />;
-      case 'open':
-        return <AlertCircle className="text-orange-600" size={20} />;
-      default:
-        return <XCircle className="text-red-600" size={20} />;
+      case 'closed': return <CheckCircle className="text-green-600" size={20} />;
+      case 'in progress': return <Clock className="text-blue-600" size={20} />;
+      case 'open': return <AlertCircle className="text-orange-600" size={20} />;
+      default: return <XCircle className="text-red-600" size={20} />;
     }
   };
 
   const getStatusColor = (status) => {
-    switch(status.toLowerCase()) {
+    switch(status?.toLowerCase()) {
       case 'resolved':
-      case 'closed':
-        return 'bg-green-100 text-green-800';
-      case 'in progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'open':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'closed': return 'bg-green-100 text-green-800';
+      case 'in progress': return 'bg-blue-100 text-blue-800';
+      case 'open': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getPriorityColor = (priority) => {
-    switch(priority.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+    switch(priority?.toLowerCase()) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
+  // ----------------- Handlers -----------------
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setComplaintForm({
-      ...complaintForm,
-      [name]: value
-    });
+    setComplaintForm({ ...complaintForm, [name]: value });
   };
 
-  const handleSubmitComplaint = (e) => {
+  const handleSubmitComplaint = async (e) => {
     e.preventDefault();
-    console.log('Complaint submitted:', complaintForm);
-    // Add API call here
-    setShowNewComplaint(false);
-    setComplaintForm({
-      subject: '',
-      category: '',
-      policyNumber: '',
-      description: '',
-      priority: 'medium'
-    });
+    setSubmitting(true);
+    setError('');
+    
+    try {
+      const newComplaint = await submitComplaint(complaintForm);
+      setComplaints([newComplaint, ...complaints]);
+      setShowNewComplaint(false);
+      setComplaintForm({
+        subject: '',
+        category: '',
+        policyNumber: '',
+        description: '',
+        priority: 'medium'
+      });
+      
+      // Show success message (optional)
+      alert('Complaint submitted successfully!');
+      
+    } catch (err) {
+      console.error('Failed to submit complaint', err);
+      setError(err.response?.data?.message || 'Failed to submit complaint. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const filteredComplaints = complaints.filter(complaint => {
-    const matchesSearch = complaint.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         complaint.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || complaint.status.toLowerCase() === filterStatus.toLowerCase();
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  // ----------------- Filtered Complaints -----------------
+  const filteredComplaints = complaints.filter((c) => {
+    const matchesSearch = c.subject?.toLowerCase().includes(searchQuery.toLowerCase()) 
+      || c.id?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterStatus === 'all' || c.status?.toLowerCase() === filterStatus.toLowerCase();
     return matchesSearch && matchesFilter;
   });
+
+  // Get user initials for avatar
+   const getUserInitials = () => {
+    if (!user) return "U";
+    const names = user.firstName && user.lastName ? [user.firstName, user.lastName] : [];
+    if (names.length >= 2) return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    return user.firstName?.[0]?.toUpperCase() || "U";
+  };
+
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="w-72 bg-gradient-to-b from-blue-900 to-blue-800 text-white flex flex-col">
-        {/* Logo */}
-        <div className="p-6 border-b border-blue-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
-              <svg className="w-6 h-6 text-blue-900" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-            </div>
-            <div>
-              <div className="font-bold text-lg">Sanlam | Allianz</div>
-            </div>
+      <aside className="w-72 bg-gradient-to-b from-blue-900 to-blue-800 text-white flex flex-col">
+        <div className="p-6 border-b border-blue-700 flex items-center space-x-3">
+          <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
+            <svg className="w-6 h-6 text-blue-900" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
           </div>
+          <div className="font-bold text-lg">Sanlam | Allianz</div>
         </div>
-
-        {/* Navigation Menu */}
         <nav className="flex-1 py-6">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -202,38 +195,42 @@ export default function ClientComplaints() {
             );
           })}
         </nav>
-
-        {/* User Profile */}
-        <div className="p-6 border-t border-blue-700">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-900 font-bold text-lg">
-              GK
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold">GUSTAVE KAREKEZI</div>
-              <div className="text-sm text-blue-300">0786979551</div>
-            </div>
+        
+        {/* User Profile Section */}
+        <div className="p-6 border-t border-blue-700 flex items-center space-x-3">
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-900 font-bold">
+            {getUserInitials()}
           </div>
-        </div>
-
-        {/* Bottom Icons */}
+          <div className="flex-1">
+            {user ? (
+              <>
+                <div className="font-semibold">{user?.user?.firstName || 'Loading...'}</div>
+                <div className="font-semibold">{user?.user?.lastName || 'Loading...'}</div>
+                <div className="text-sm text-blue-300">{user?.user?.phone || user?.user?.email}</div>
+              </>
+            ) : (
+              'Loading...'
+            )} 
+          </div>  
+            </div>
+        
         <div className="p-4 border-t border-blue-700 flex justify-around">
           <button className="p-2 hover:bg-blue-700 rounded-full transition-colors">
             <Settings size={20} />
           </button>
           <button 
-            onClick={() => navigate('/')}
+            onClick={handleLogout}
             className="p-2 hover:bg-blue-700 rounded-full transition-colors"
           >
             <LogOut size={20} />
           </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <header className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Complaints</h1>
             <p className="text-gray-600 mt-1">Submit and track your complaints</p>
@@ -251,248 +248,172 @@ export default function ClientComplaints() {
               <span className="font-semibold">New Complaint</span>
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* Search and Filter Bar */}
-        <div className="bg-white border-b px-8 py-4">
-          <div className="flex space-x-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search complaints by ID or subject..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="in progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
-            </select>
+        {/* Error Message */}
+        {error && (
+          <div className="mx-8 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+            <AlertCircle className="text-red-600" size={20} />
+            <span className="text-red-800 text-sm">{error}</span>
+            <button onClick={() => setError('')} className="ml-auto">
+              <X size={16} className="text-red-600" />
+            </button>
           </div>
+        )}
+
+        {/* Search & Filter */}
+        <div className="bg-white border-b px-8 py-4 flex space-x-4">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search complaints by ID or subject..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">All Status</option>
+            <option value="open">Open</option>
+            <option value="in progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="closed">Closed</option>
+          </select>
         </div>
 
         {/* Complaints List */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="space-y-4">
-            {filteredComplaints.map((complaint) => (
-              <div key={complaint.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden">
-                <div className="p-6">
-                  {/* Complaint Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-xl font-bold text-gray-900">{complaint.subject}</h3>
-                        {getStatusIcon(complaint.status)}
-                      </div>
-                      <div className="flex items-center space-x-4 text-sm text-gray-600">
-                        <span className="font-semibold">{complaint.id}</span>
-                        <span>•</span>
-                        <span>Policy: {complaint.policyNumber}</span>
-                        <span>•</span>
-                        <span>Category: {complaint.category}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(complaint.status)}`}>
-                        {complaint.status}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(complaint.priority)}`}>
-                        {complaint.priority.toUpperCase()} Priority
-                      </span>
-                    </div>
+        <section className="flex-1 overflow-y-auto p-8">
+          {loading ? (
+            <div className="text-center py-20 text-gray-500">Loading complaints...</div>
+          ) : filteredComplaints.length === 0 ? (
+            <div className="text-center py-20 text-gray-500">
+              {complaints.length === 0 ? 'No complaints yet. Submit your first complaint!' : 'No complaints match your search criteria.'}
+            </div>
+          ) : (
+            filteredComplaints.map((c) => (
+              <div key={c._id || c.id} className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow mb-4 p-6">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-xl font-bold text-gray-900">{c.subject}</h3>
+                    {getStatusIcon(c.status)}
                   </div>
-
-                  {/* Complaint Description */}
-                  <div className="mb-4">
-                    <p className="text-gray-700">{complaint.description}</p>
-                  </div>
-
-                  {/* Response Section */}
-                  {complaint.response && (
-                    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
-                      <p className="text-sm font-semibold text-gray-700 mb-1">Response from Support Team:</p>
-                      <p className="text-sm text-gray-700">{complaint.response}</p>
-                    </div>
-                  )}
-
-                  {/* Footer */}
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <div className="flex items-center space-x-4 text-sm text-gray-500">
-                      <span>Submitted: {complaint.dateSubmitted}</span>
-                      <span>•</span>
-                      <span>Last Updated: {complaint.lastUpdated}</span>
-                    </div>
-                    <button className="flex items-center space-x-2 px-4 py-2 text-blue-700 hover:bg-blue-50 rounded-lg transition-colors">
-                      <Eye size={16} />
-                      <span className="font-semibold">View Details</span>
-                    </button>
+                  <div className="flex flex-col items-end space-y-1">
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(c.status)}`}>
+                      {c.status}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(c.priority)}`}>
+                      {c.priority?.toUpperCase()} Priority
+                    </span>
                   </div>
                 </div>
+                <div className="text-sm text-gray-600 mb-3">
+                  <span className="font-semibold">{c.id}</span> • Policy: {c.policyNumber} • Category: {c.category}
+                </div>
+                <p className="text-gray-700 mb-3">{c.description}</p>
+                {c.response && (
+                  <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3 text-sm text-gray-700">
+                    <span className="font-semibold">Response from Support Team:</span> {c.response}
+                  </div>
+                )}
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Submitted: {new Date(c.createdAt).toLocaleDateString()}</span>
+                  <span>Last Updated: {new Date(c.updatedAt).toLocaleDateString()}</span>
+                </div>
               </div>
-            ))}
-          </div>
-
-          {/* Empty State */}
-          {filteredComplaints.length === 0 && (
-            <div className="text-center py-20">
-              <MessageSquare className="mx-auto w-16 h-16 text-gray-400 mb-4" />
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Complaints Found</h3>
-              <p className="text-gray-500">No complaints match your search criteria.</p>
-            </div>
+            ))
           )}
-        </div>
-      </div>
+        </section>
 
-      {/* New Complaint Modal */}
-      {showNewComplaint && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Submit New Complaint</h2>
-              <button
-                onClick={() => setShowNewComplaint(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitComplaint} className="p-6 space-y-5">
-              {/* Subject */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Subject *
-                </label>
+        {/* New Complaint Modal */}
+        {showNewComplaint && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">Submit New Complaint</h2>
+                <button
+                  onClick={() => setShowNewComplaint(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  disabled={submitting}
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmitComplaint} className="p-6 space-y-4">
                 <input
                   type="text"
                   name="subject"
+                  placeholder="Subject *"
                   value={complaintForm.subject}
                   onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Brief description of your complaint"
+                  disabled={submitting}
                 />
-              </div>
-
-              {/* Category and Policy Number */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    name="category"
-                    value={complaintForm.category}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Claims">Claims</option>
-                    <option value="Billing">Billing</option>
-                    <option value="Documentation">Documentation</option>
-                    <option value="Technical">Technical</option>
-                    <option value="Customer Service">Customer Service</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Policy Number *
-                  </label>
-                  <input
-                    type="text"
-                    name="policyNumber"
-                    value={complaintForm.policyNumber}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="E390073"
-                  />
-                </div>
-              </div>
-
-              {/* Priority */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Priority Level *
-                </label>
-                <div className="flex space-x-4">
-                  {['low', 'medium', 'high'].map((priority) => (
-                    <label key={priority} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="priority"
-                        value={priority}
-                        checked={complaintForm.priority === priority}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <span className="capitalize">{priority}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Detailed Description *
-                </label>
+                <input
+                  type="text"
+                  name="category"
+                  placeholder="Category (e.g., Claims, Billing, Service) *"
+                  value={complaintForm.category}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={submitting}
+                />
+                <input
+                  type="text"
+                  name="policyNumber"
+                  placeholder="Policy Number *"
+                  value={complaintForm.policyNumber}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                  disabled={submitting}
+                />
                 <textarea
                   name="description"
+                  placeholder="Describe your complaint in detail *"
                   value={complaintForm.description}
                   onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
                   required
-                  rows="6"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Please provide detailed information about your complaint..."
+                  disabled={submitting}
                 />
-              </div>
-
-              {/* Info Box */}
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                <p className="text-sm text-gray-700">
-                  <strong>Note:</strong> Our support team will review your complaint and respond within 2-3 business days. You will receive updates via email and SMS.
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setShowNewComplaint(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                <select
+                  name="priority"
+                  value={complaintForm.priority}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={submitting}
                 >
-                  Cancel
-                </button>
+                  <option value="low">Low Priority</option>
+                  <option value="medium">Medium Priority</option>
+                  <option value="high">High Priority</option>
+                </select>
                 <button
                   type="submit"
-                  className="flex-1 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center space-x-2"
+                  disabled={submitting}
+                  className="w-full bg-blue-700 text-white py-2 rounded-lg hover:bg-blue-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  <Send size={20} />
-                  <span>Submit Complaint</span>
+                  {submitting ? (
+                    <>
+                      <span className="animate-spin mr-2">⏳</span>
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Complaint'
+                  )}
                 </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* Floating Chat Button */}
-      <button className="fixed bottom-6 right-6 w-14 h-14 bg-blue-700 text-white rounded-full shadow-lg hover:bg-blue-800 transition-all hover:scale-110 flex items-center justify-center">
-        <MessageSquare size={24} />
-      </button>
+        )}
+      </main>
     </div>
   );
 }
