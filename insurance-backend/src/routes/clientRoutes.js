@@ -1,112 +1,32 @@
-
-
-// ==================== CLIENT ROUTES ====================
-
 const express = require('express');
-const { protect, authorize } = require('../middleware/auth');
-const User = require('../models/User');
 const router = express.Router();
+const claimController = require('../controllers/claimController');
+const { protect, authorize } = require('../middleware/auth');
+const multer = require('multer');
 
+const upload = multer({ dest: 'temp/' });
+
+// All routes require authentication
 router.use(protect);
-router.use(authorize('admin'));
 
-// Get all clients
-router.get('/', async (req, res) => {
-  try {
-    const clients = await User.find({ role: 'client' })
-      .select('-password')
-      .sort('-createdAt');
+// Client routes
+router.post('/claims', authorize('client'), claimController.submitClaim);
+router.get('/claims/my-claims', authorize('client'), claimController.getMyClaims);
 
-    res.status(200).json({
-      success: true,
-      count: clients.length,
-      data: clients
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
+// Upload claim documents
+router.post(
+  '/claims/:id/documents',
+  upload.array('files'),      // <-- multer middleware
+  claimController.uploadDocuments
+);
 
-// Get single client
-router.get('/:id', async (req, res) => {
-  try {
-    const client = await User.findById(req.params.id).select('-password');
+// Update, cancel claim
+router.put('/claims/:id', claimController.updateClaim);
+router.put('/claims/:id/cancel', claimController.cancelClaim);
 
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found'
-      });
-    }
+// Agent/Admin routes
+router.get('/claims/assigned', authorize('agent'), claimController.getAssignedClaims);
+router.put('/claims/:id/assign', authorize('agent', 'admin'), claimController.assignClaim);
 
-    res.status(200).json({
-      success: true,
-      data: client
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// Update client
-router.put('/:id', async (req, res) => {
-  try {
-    const client = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Client updated successfully',
-      data: client
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
-// Delete client
-router.delete('/:id', async (req, res) => {
-  try {
-    const client = await User.findById(req.params.id);
-
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client not found'
-      });
-    }
-
-    await client.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: 'Client deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
-});
-
+// Export router
 module.exports = router;

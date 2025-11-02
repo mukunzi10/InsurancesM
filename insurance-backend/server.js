@@ -1,110 +1,229 @@
+/**
+ * Sanlam | Allianz Insurance Management System - Backend
+ * Version: 2.1.0 (Express 5 Compatible)
+ */
+
+require('dotenv').config({ path: './.env' });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
+const compression = require('compression');
+const morgan = require('morgan');
+const path = require('path');
+const fs = require('fs');
 const mongoose = require('mongoose');
-const connectDB = require('./src/config/database');
+
+const { sanitizeRequest } = require('./src/middleware/sanitize');
 const errorHandler = require('./src/middleware/errorHandler');
+const connectDB = require('./src/config/database');
 
-// Load environment variables
-dotenv.config({ path: './.env' });
+// =====================================================
+// ⚙️ Environment Configuration
+// =====================================================
+const config = {
+  port: parseInt(process.env.PORT, 10) || 5000,
+  env: process.env.NODE_ENV || 'development',
+  mongoUri: process.env.MONGODB_URI,
+  frontendUrls: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3002',
+    'http://127.0.0.1:3002',
+  ],
+};
 
-// Initialize Express
+// Validate critical env vars
+['MONGODB_URI', 'JWT_SECRET'].forEach((key) => {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+});
+
+// =====================================================
+// 🧱 Express App Initialization
+// =====================================================
 const app = express();
-
-// Connect to MongoDB
-connectDB();
-
-// Trust proxy for reverse proxy rate limiting
+app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// =====================================================
+// 📁 Ensure Required Directories Exist
+// =====================================================
+['temp', 'uploads', 'uploads/documents', 'uploads/images', 'logs'].forEach((dir) => {
+  const dirPath = path.join(__dirname, dir);
+  if (!fs.existsSync(dirPath)) fs.mkdirSync(dirPath, { recursive: true });
+});
 
-// ✅ Enhanced CORS setup
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:3000',
-  'http://localhost:3002', // for development
-  'http://127.0.0.1:3000',
-  'http://127.0.0.1:3002',
+// =====================================================
+// 🗄️ Connect to MongoDB
+// =====================================================
+connectDB();
+
+// =====================================================
+// 🛡️ Security Middleware
+// =====================================================
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false, // disable for APIs
+  })
+);
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(sanitizeRequest); // XSS & Mongo sanitization
+
+// =====================================================
+// 🌐 CORS Setup
+// =====================================================
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || config.frontendUrls.includes(origin)) return callback(null, true);
+      console.warn(`⚠️  CORS blocked: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  })
+);
+
+// =====================================================
+// ⚡ Compression
+// =====================================================
+app.use(compression());
+
+// =====================================================
+// 🧾 Logging
+// =====================================================
+if (config.env === 'development') {
+  app.use(morgan('dev'));
+} else {
+  const logDir = path.join(__dirname, 'logs');
+  const accessLog = fs.createWriteStream(path.join(logDir, 'access.log'), { flags: 'a' });
+  app.use(morgan('combined', { stream: accessLog }));
+}
+
+// =====================================================
+// 🧍‍♂️ Request ID
+// =====================================================
+app.use((req, res, next) => {
+  req.id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  res.setHeader('X-Request-Id', req.id);
+  next();
+});
+
+// =====================================================
+// 🚦 Rate Limiting
+// =====================================================
+app.use(
+  '/api/',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: config.env === 'development' ? 1000 : 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests, try again later.' },
+  })
+);
+
+// =====================================================
+// 🗂️ Static Files
+// =====================================================
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// =====================================================
+//  Routes
+// =====================================================
+
+const routes = [
+  { path: '/api/auth', file: './src/routes/authRoutes' },
+  { path: '/api/policies', file: './src/routes/policyRoutes' },
+  { path: '/api/claims', file: './src/routes/claimRoutes' },
+  { path: '/api/payments', file: './src/routes/paymentRoutes' },
+  { path: '/api/complaints', file: './src/routes/complaintRoutes' },
+  { path: '/api/feedback', file: './src/routes/feedbackRoutes' },
+  { path: '/api/services', file: './src/routes/serviceRoutes' }
+ 
 ];
 
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (e.g., mobile apps or curl)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      console.warn(`🚫 CORS blocked request from: ${origin}`);
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-}));
-
-// Body parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  message: 'Too many requests from this IP, please try again later.',
+routes.forEach(({ path: routePath, file }) => {
+  try {
+    const route = require(file);
+    app.use(routePath, route);
+    console.log(`✅ Loaded route: ${routePath} from ${file}`);
+  } catch (err) {
+    console.error(`❌ Failed to load route ${routePath} from ${file}: ${err.message}`);
+  }
 });
-app.use('/api/', limiter);
 
-// Static uploads folder
-app.use('/uploads', express.static('uploads'));
-
-// Welcome route
+// =====================================================
+// 💡 Info & Health Endpoints
+// =====================================================
 app.get('/', (req, res) => {
   res.json({
+    success: true,
     message: 'Welcome to Sanlam | Allianz Insurance API',
-    version: '1.0.0',
+    version: '2.1.0',
     status: 'Running',
+    environment: config.env,
   });
 });
 
-// Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({
-    database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
     uptime: process.uptime(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    memory: process.memoryUsage(),
     timestamp: new Date().toISOString(),
   });
 });
 
-// API Routes
-app.use('/api/auth', require('./src/routes/authRoutes'));
-app.use('/api/policies', require('./src/routes/policyRoutes'));
-app.use('/api/claims', require('./src/routes/claimRoutes'));
-app.use('/api/payments', require('./src/routes/paymentRoutes'));
-app.use('/api/complaints', require('./src/routes/complaintRoutes'));
-app.use('/api/feedback', require('./src/routes/feedbackRoutes'));
-
-// 404 fallback route
+// =====================================================
+// ❌ 404 Handler
+// =====================================================
 app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
+  res.status(404).json({
+    success: false,
+    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    requestId: req.id,
+  });
 });
 
-// Global Error Handler
+// =====================================================
+// ⚠️ Global Error Handler
+// =====================================================
 app.use(errorHandler);
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-const NODE_ENV = process.env.NODE_ENV || 'development';
-const server = app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT} in ${NODE_ENV} mode`);
+// =====================================================
+// 🧘 Graceful Shutdown
+// =====================================================
+let server;
+const shutdown = async (signal) => {
+  console.log(`\n🛑 ${signal} received. Gracefully shutting down...`);
+  if (server) {
+    server.close(async () => {
+      await mongoose.connection.close();
+      console.log('🗄️ Database disconnected');
+      process.exit(0);
+    });
+  }
+};
+
+['SIGTERM', 'SIGINT'].forEach((sig) => process.on(sig, () => shutdown(sig)));
+
+// =====================================================
+// 🚀 Start Server
+// =====================================================
+server = app.listen(config.port, () => {
+  console.log('\n===================================================');
+  console.log(`🚀 Server running on port ${config.port} (${config.env})`);
+  console.log('===================================================');
+  console.log(`📊 Health: http://localhost:${config.port}/health`);
+  console.log(`🧭 API: http://localhost:${config.port}/api`);
+  console.log(`🗄️  DB: ${mongoose.connection.readyState === 1 ? 'Connected ✅' : 'Disconnected ❌'}`);
+  console.log('===================================================\n');
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  server.close(() => console.log('🛑 Server gracefully terminated'));
-});
-process.on('SIGINT', () => {
-  server.close(() => console.log('🛑 Server interrupted'));
-});
+module.exports = app;

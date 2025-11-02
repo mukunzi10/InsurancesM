@@ -12,7 +12,7 @@ const {
 const { protect, adminOnly } = require("../middleware/auth");
 
 // Client routes
-router.post("/", protect, createComplaint);
+router.post("/addComplaints", protect, createComplaint);
 router.get("/my-complaints", protect, getMyComplaints);
 router.get("/:id", protect, getComplaintById);
 
