@@ -30,12 +30,11 @@ export default function ClientComplaints() {
   });
 
   const menuItems = [
-    { id: 'policies', label: 'Policies', icon: FileText, path: '/clientDashboard' },
-    { id: 'services', label: 'Services', icon: Briefcase, path: '/clientDashboard/services' },
-    { id: 'complaints', label: 'Complaints', icon: MessageSquare, path: '/clientDashboard/complaints' },
-    { id: 'feedback', label: 'Feedback', icon: ThumbsUp, path: '/clientDashboard/feedback' }
+    { id: 'policies', label: 'Policies', icon: FileText, path: '/ClientDashboard' },
+    { id: 'services', label: 'Services', icon: Briefcase, path: '/services' },
+    { id: 'complaints', label: 'Complaints', icon: MessageSquare, path: '/complaints' },
+    { id: 'feedback', label: 'Feedback', icon: ThumbsUp, path: '/feedback' }
   ];
-
   // ----------------- Fetch User & Complaints -----------------
   useEffect(() => {
     const loadData = async () => {
@@ -127,7 +126,7 @@ export default function ClientComplaints() {
         category: '',
         policyNumber: '',
         description: '',
-        priority: 'medium'
+        priority: ''
       });
       
       // Show success message (optional)

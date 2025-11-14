@@ -1,4 +1,4 @@
-const Service = require('../models/Service');
+const Service = require('../models/Servicea');
 const ServiceApplication = require('../models/ServiceApplication');
 const User = require('../models/User');
 const Policy = require('../models/Policy'); // Uncomment if needed
@@ -734,3 +734,4 @@ exports.getApplicationStats = async (req, res) => {
 };
 // =====================================================
 
+// END OF SERVICE CONTROLLER

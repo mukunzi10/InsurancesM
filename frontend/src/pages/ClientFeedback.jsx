@@ -100,7 +100,7 @@ export default function ClientFeedback() {
   };
 
   const menuItems = [
-    { id: "policies", label: "Policies", icon: FileText, path: "/dashboard" },
+    { id: "policies", label: "Policies", icon: FileText, path: "/ClientDashboard" },
     { id: "services", label: "Services", icon: Briefcase, path: "/services" },
     { id: "complaints", label: "Complaints", icon: MessageSquare, path: "/complaints" },
     { id: "feedback", label: "Feedback", icon: ThumbsUp, path: "/feedback" },

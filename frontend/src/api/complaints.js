@@ -48,7 +48,7 @@ export const fetchMyComplaints = async () => {
  */
 export const submitComplaint = async (complaintData) => {
   try {
-    const res = await axios.post(`${API_BASE}/complaints`, complaintData, getAuthConfig());
+    const res = await axios.post(`${API_BASE}/complaints/addComplaints`, complaintData, getAuthConfig());
     return res.data.complaint;
   } catch (error) {
     console.error('Failed to submit complaint:', error.response?.data || error.message);
